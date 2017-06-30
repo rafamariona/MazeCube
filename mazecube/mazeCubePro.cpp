@@ -7,8 +7,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <vector>
-#include "SDL/SDL.h"
-#include "SDL/SDL_mixer.h"
+#include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
 #define MOV_ARRIBA      1
 #define MOV_ABAJO       2
 #define MOV_IZQUIERDA   3
@@ -36,21 +36,26 @@ const GLfloat mat_diffuse[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
 const GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f };
 const GLfloat high_shininess[] = { 100.0f };
 
-//*****variables para mover camara según cubo****
+//-----variables para mover camara según cubo------
 const GLfloat maxCamY = 200.0f, minCamY = 60.0f;
 GLfloat posObjeto = -5.0f;
 GLfloat anguloCamaraY = 0.0f;
 GLfloat anguloCamaraX = 0.0f;
 GLfloat camX,camY,camZ;
 GLfloat deltay = 4;
+
 bool salto; //sirve para saber si saltaremos
 int saltocont=0;
+
 //los movientos utilizados seran almacenados para porder moverse en toda la matriz
 int avancex=0, avancez=0;
+
 //----variables para el salto-----
 int giro=0;
 int giro_lateral=0;
 int altura;
+int dir=0;
+int nivel=0;
 
 unsigned int textureID;  //variable para la textura
 int xx[40],yy[40];
@@ -70,6 +75,7 @@ const int altoMapa=40,largoMapa=40;
 // 4 = reset
 // 5 = agujeros
 
+//-----------------------------------la matriz que controla todo-----------------------------------------------------------
 int mapa[altoMapa][largoMapa]= {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                                 1,0,0,0,1,0,0,0,1,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
                                 1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
@@ -111,42 +117,42 @@ int mapa[altoMapa][largoMapa]= {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                                 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
                                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,2,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 
-//texto a mostrar
+//----------------texto a mostrar-----------------
 void text(){
   char text[32];
-    //  if(avancex=340 && -580<avancez<-520){
       if(avancez==-580 && avancex==360){
-      sprintf(text, "Completó MazeCube v13.4.1 en %d segundos ¡Felicidades!", frameNumber);
-	  glColor4f(1.0, 0.0, 1.0,1.0);
-      glRasterPos3f(-130+20+avancex , 223 ,0+80+avancez);
-      for(int i = 0; text[i] != '\0'; i++){
-          glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, text[i]);}
-	  printf("Completó MazeCube v13.4.1 en %d segundos ¡Felicidades!\n",frameNumber);
-	  }  
-       if (frameNumber>200){
-			printf("GAME OVER\n");
-	
-			exit(0);
-		   }   
+        sprintf(text, "Completó MazeCube v13.4.1 en %d segundos ¡Felicidades!", frameNumber);
+  	    glColor4f(1.0, 0.0, 1.0,1.0);
+        glRasterPos3f(-130+20+avancex , 223 ,0+80+avancez);
+        for(int i = 0; text[i] != '\0'; i++){
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, text[i]);
+          }
+  	    printf("Completó MazeCube v13.4.1 en %d segundos ¡Felicidades!\n",frameNumber);
+	    }  
+      if (frameNumber>2){
+			  printf("GAME OVER\n");
+        exit(0);
+		  }   
     
-	  else{
-		sprintf(text, "MazeCube v13.4.1    Tiempo: %d segundos", frameNumber);
-		glColor4f(0.0, 1.0, 1.0,1.0);
-		glRasterPos3f( -100+20+avancex , 223 ,0+80+avancez);
-		for(int i = 0; text[i] != '\0'; i++){
-			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, text[i]);}
-	}
+      else{
+  		  sprintf(text, "MazeCube v13.4.1    Tiempo: %d segundos", frameNumber);
+  		  glColor4f(0.0, 1.0, 1.0,1.0);
+  		  glRasterPos3f( -100+20+avancex , 223 ,0+80+avancez);
+  		  for(int i = 0; text[i] != '\0'; i++){
+  			 glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, text[i]);}
+	      }
 }
 
-/* GIMP RGB C-Source image dump (ladrillos.c) */
-struct ttextura_gimp {
+//-------propiedades de la textura----------------
+struct texturaGimp {
   unsigned int    width;
   unsigned int     height;
   unsigned int     bytes_per_pixel; /* 3:RGB, 4:RGBA */
   unsigned char    pixel_data[100 * 100* 3 + 1];
 };
 
-struct ttextura_gimp textura_ladrillos = {
+//---------código C para la textura------------------
+struct texturaGimp texturaLadrillos = {
   100, 100, 3,
   "\363\345\334\363\345\334\363\345\334\362\344\333\360\342\331\360\342\331"
   "\360\342\331\364\341\332\363\342\332\363\342\332\356\340\325\354\337\322"
@@ -1484,15 +1490,16 @@ struct ttextura_gimp textura_ladrillos = {
   "\364\346\335\364\346\335\364\346\335\364\345\335",
 };
 
-
-struct ttextura_gimp_2 {
+//-------propiedades de la textura----------------
+struct texturaGimp2{
   unsigned int    width;
   unsigned int     height;
   unsigned int     bytes_per_pixel; /* 3:RGB, 4:RGBA */
   unsigned char    pixel_data[50 * 50 * 3 + 1];
 };
 
-struct ttextura_gimp textura_reptil = {
+//---------código C para la textura------------------
+struct texturaGimp2 texturaReptil = {
    50, 50, 3,
   "w\317/\210\344?y\322\067w\323.\207\350<i\303*\206\336\070\202\331<d\272%\212"
   "\343\071m\301\061i\272.i\272)m\276\063b\261'\210\344;l\305,n\300-\200\330\062"
@@ -1770,10 +1777,12 @@ struct ttextura_gimp textura_reptil = {
 };
 
 
+
+//-----------array para los cubos del mapa--------------
 int cubos[altoMapa][largoMapa][2];
 
-//inicia sdl
-bool init_sdl() {
+//---------------inicia sdl-----------------------
+bool initSdl() {
     //Initialize all SDL subsystems
     if( SDL_Init( SDL_INIT_EVERYTHING ) == -1 )
     {
@@ -1789,8 +1798,8 @@ bool init_sdl() {
     return true;
 }
 
-//carga los archivos
-bool load_files_sdl(){
+//----------------carga los archivos para el sdl----------
+bool loadFilesSdl(){
     //Load the music
     music = Mix_LoadMUS( "breakout.wav" );
 
@@ -1812,9 +1821,7 @@ bool load_files_sdl(){
     return true;
 }
 
-
-//Esta función carga de la matriz inicial las coordenadas de todos los cubos
-//con el fin de optimizar el proceso de dibujo
+//------------carga de la matriz inicial las coordenadas de todos los cubos---------------
 void parseCubos(){
 
     //(initX,initZ) es la esquina superior izquierda de todo el mapa
@@ -1851,6 +1858,7 @@ void parseCubos(){
     //printf("%d\n",hipotenusa);
 }
 
+//------redibuja el tamaño de la ventana------------
 void reshape(int width, int height) {
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
@@ -1861,66 +1869,78 @@ void reshape(int width, int height) {
     glLoadIdentity();
 }
 
-void define_textura_2D_128(struct ttextura_gimp textuN){
-  glGenTextures(1,&textureID);          // Genera la textura 1 con la variable texture
-  glBindTexture(GL_TEXTURE_2D,textureID);   // Asocia la variable texture como GL_TEXTURE_2D
-  glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);  // Asigna Gl_MODULATE A GL_TEXTURE_ENV_MODE
-  gluBuild2DMipmaps( GL_TEXTURE_2D, textuN.bytes_per_pixel,textuN.width,textuN.height,GL_RGB,GL_UNSIGNED_BYTE,textuN.pixel_data );
-    // Define las propiedasdes de la textura 2D asociando la textura exportada gimp_image a la GL_TEXTURE_2D
+//---------define la textura-------
+void defineTextura(struct texturaGimp textuN){
+	glGenTextures(1,&textureID);          // Genera la textura 1 con la variable texture
+	glBindTexture(GL_TEXTURE_2D,textureID);   // Asocia la variable texture como GL_TEXTURE_2D
+	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);  // Asigna Gl_MODULATE A GL_TEXTURE_ENV_MODE
+	gluBuild2DMipmaps( GL_TEXTURE_2D, textuN.bytes_per_pixel,textuN.width,textuN.height,GL_RGB,GL_UNSIGNED_BYTE,textuN.pixel_data );
+	// Define las propiedasdes de la textura 2D asociando la textura exportada gimp_image a la GL_TEXTURE_2D
 };
 
+//---------define la textura-------
+void defineTextura2(struct texturaGimp2 textuN){
+	glGenTextures(2,&textureID);          // Genera la textura 1 con la variable texture
+	glBindTexture(GL_TEXTURE_2D,textureID);   // Asocia la variable texture como GL_TEXTURE_2D
+	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);  // Asigna Gl_MODULATE A GL_TEXTURE_ENV_MODE
+	gluBuild2DMipmaps( GL_TEXTURE_2D, textuN.bytes_per_pixel,textuN.width,textuN.height,GL_RGB,GL_UNSIGNED_BYTE,textuN.pixel_data );
+	// Define las propiedasdes de la textura 2D asociando la textura exportada gimp_image a la GL_TEXTURE_2D
+};
 
+//------dibuja los cubos para las paredes---------
 void dibujarCubo(int X, int Z, int a){
  // aqui se cambia el color de los cuadros tanto del piso como el del techo
  //*******************************IIMPORTANTE
-    if (a!=120)
-    {
-      /* code */glColor4f(1.0,1.0,1.0,1.0);
-    }else{
-      glColor4f(0.0,0.50,0.50,1.0);}
-    glBegin(GL_QUADS);
-        //Cara de enfrente
-        glNormal3f(0.0f, 0.0f, 1.0f);
-        glTexCoord2d(0.0,0.0);   glVertex3f(X-espacios,espacios+a,Z+espacios);
-        glTexCoord2d(0.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z+espacios);
-        glTexCoord2d(1.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z+espacios);
-        glTexCoord2d(1.0,0.0);   glVertex3f(X+espacios,espacios+a,Z+espacios);
+        if (a!=120)
+        {
+          glColor4f(1.0,1.0,1.0,1.0);
+        }else{
+          glColor4f(0.0,0.50,0.50,1.0);
+        }
+        glBegin(GL_QUADS);
+			//Cara de enfrente
+			glNormal3f(0.0f, 0.0f, 1.0f);
+			glTexCoord2d(0.0,0.0);   glVertex3f(X-espacios,espacios+a,Z+espacios);
+			glTexCoord2d(0.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z+espacios);
+			glTexCoord2d(1.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z+espacios);
+			glTexCoord2d(1.0,0.0);   glVertex3f(X+espacios,espacios+a,Z+espacios);
 
-        //Cara izquierda
-        glNormal3f(-1.0f, 0.0f, 0.0f);
-        glTexCoord2d(0.0,0.0);   glVertex3f(X-espacios,espacios+a,Z-espacios);
-        glTexCoord2d(0.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z-espacios);
-        glTexCoord2d(1.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z+espacios);
-        glTexCoord2d(1.0,0.0);   glVertex3f(X-espacios,espacios+a,Z+espacios);
+			//Cara izquierda
+			glNormal3f(-1.0f, 0.0f, 0.0f);
+			glTexCoord2d(0.0,0.0);   glVertex3f(X-espacios,espacios+a,Z-espacios);
+			glTexCoord2d(0.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z-espacios);
+			glTexCoord2d(1.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z+espacios);
+			glTexCoord2d(1.0,0.0);   glVertex3f(X-espacios,espacios+a,Z+espacios);
 
-        //Cara de atrás
-        glNormal3f(0.0f, 0.0f, -1.0f);
-        glTexCoord2d(0.0,0.0);   glVertex3f(X+espacios,espacios+a,Z-espacios);
-        glTexCoord2d(0.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z-espacios);
-        glTexCoord2d(1.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z-espacios);
-        glTexCoord2d(1.0,0.0);   glVertex3f(X-espacios,espacios+a,Z-espacios);
+			//Cara de atrás
+			glNormal3f(0.0f, 0.0f, -1.0f);
+			glTexCoord2d(0.0,0.0);   glVertex3f(X+espacios,espacios+a,Z-espacios);
+			glTexCoord2d(0.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z-espacios);
+			glTexCoord2d(1.0,1.0);   glVertex3f(X-espacios,-espacios+a,Z-espacios);
+			glTexCoord2d(1.0,0.0);   glVertex3f(X-espacios,espacios+a,Z-espacios);
 
-        //Cara derecha
-        glNormal3f(1.0f, 0.0f, 0.0f);
-        glTexCoord2d(0.0,0.0);   glVertex3f(X+espacios,espacios+a,Z+espacios);
-        glTexCoord2d(0.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z+espacios);
-        glTexCoord2d(1.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z-espacios);
-        glTexCoord2d(1.0,0.0);   glVertex3f(X+espacios,espacios+a,Z-espacios);
+			//Cara derecha
+			glNormal3f(1.0f, 0.0f, 0.0f);
+			glTexCoord2d(0.0,0.0);   glVertex3f(X+espacios,espacios+a,Z+espacios);
+			glTexCoord2d(0.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z+espacios);
+			glTexCoord2d(1.0,1.0);   glVertex3f(X+espacios,-espacios+a,Z-espacios);
+			glTexCoord2d(1.0,0.0);   glVertex3f(X+espacios,espacios+a,Z-espacios);
 
-        //Cara Arriba
-        glNormal3f(0.0f, 1.0f, 0.0f);
-        glTexCoord2d(0.0,0.0);   glVertex3f(X-espacios,espacios+a,Z-espacios);
-        glTexCoord2d(0.0,1.0);   glVertex3f(X-espacios,espacios+a,Z+espacios);
-        glTexCoord2d(1.0,1.0);   glVertex3f(X+espacios,espacios+a,Z+espacios);
-        glTexCoord2d(1.0,0.0);   glVertex3f(X+espacios,espacios+a,Z-espacios);
-    glEnd();
+			//Cara Arriba
+			glNormal3f(0.0f, 1.0f, 0.0f);
+			glTexCoord2d(0.0,0.0);   glVertex3f(X-espacios,espacios+a,Z-espacios);
+			glTexCoord2d(0.0,1.0);   glVertex3f(X-espacios,espacios+a,Z+espacios);
+			glTexCoord2d(1.0,1.0);   glVertex3f(X+espacios,espacios+a,Z+espacios);
+			glTexCoord2d(1.0,0.0);   glVertex3f(X+espacios,espacios+a,Z-espacios);
+		glEnd();
 }
 
+//------revisa las dimensiones del mapa---------
 bool esValido(int X, int Z) {
     return X>=0 && X<largoMapa && Z>=0 && Z<altoMapa;
 }
 
-
+//-----------dibuja todo el piso-----------------------
 void dibujarPiso(int X, int Y, int Z){
     glPushMatrix();
     glColor4f(0.32,0.32,0.32,0.5);
@@ -1938,9 +1958,10 @@ void dibujarPiso(int X, int Y, int Z){
 
 }
 
-//----------------Funcion que dibuja el garrobo-------
+//----------------dibuja el personaje (garrobito)------------------
 void garrobito(){
-	define_textura_2D_128(textura_reptil);
+	
+	defineTextura2(texturaReptil);
 	// Indicamos el tipo de filtrado
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_NEAREST );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST );
@@ -2021,16 +2042,19 @@ void garrobito(){
 	glDisable (GL_TEXTURE_GEN_S);
 }
 
+//-----------dibuja todo el contenido del mapa------------------
 void dibujaMapa(){
   //float x,y;
-  define_textura_2D_128(textura_ladrillos);
+  defineTextura(texturaLadrillos);
   for(int i=0;i<altoMapa;i++){
         for(int j=0;j<largoMapa;j++){
             switch(mapa[i][j]){
                 case 0:
+                
                 case 2:
                     dibujarPiso(cubos[i][j][0],-espacios,cubos[i][j][1]);
-                    break;
+					break;
+                
                 case 1:
                      //Carga el cubo con textura
                     glPushMatrix();
@@ -2041,29 +2065,23 @@ void dibujaMapa(){
                     dibujarCubo(cubos[i][j][0],cubos[i][j][1],60);
                     dibujarCubo(cubos[i][j][0],cubos[i][j][1],80);
                     glDisable(GL_TEXTURE_2D);
-
-
-
                     //DIBUJAMOS EL TECHO CON OTRO COLOR.
                     glPushMatrix();
                     glColor3f(0,1.0,1.0);
-
                     dibujarCubo(cubos[i][j][0],cubos[i][j][1],120);
-
+                    glPopMatrix();
                     glPopMatrix();
 
-
-                    glPopMatrix();
-
-                break;
-
+					break;
+                
                 case 3:
                     glPushMatrix();
                     glColor3f(0,1,1);
                     glTranslatef(cubos[i][j][0],0,cubos[i][j][1]);
                     glutSolidCube(tamCubo);
                     glPopMatrix();
-                break;
+					break;
+					
                 case 4:
 					glPushMatrix();
 					glColor4f(0.153,0.255,1.0,0.8);
@@ -2071,7 +2089,8 @@ void dibujaMapa(){
                     glScalef(1.0,0.0015,1.0);
                     glutSolidCube(tamCubo);
 					glPopMatrix();
-				break;
+					break;
+				
 				case 5:
 					glPushMatrix();
 					glColor4f(0.153,0.255,1.0,0.8);
@@ -2079,34 +2098,51 @@ void dibujaMapa(){
                     glScalef(1.0,0.0015,1.0);
                     glutSolidCube(tamCubo);
 					glPopMatrix();
-				break;	
-					
+					break;						
             }
         }
     }
 	//llamado a la función 
 	garrobito();
-	//printf ("valor de direccion %d \n",avancez); //llama a la función 
 }
 
 
 // función que muestra por pantalla la escena.
 void display() {
-  //***********************CAMARA********************************************
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLoadIdentity();
-    gluLookAt(camX+avancex-20,camY+100,camZ+270+avancez,  //LAS VARIABÑES DE AVANCE SE USAN PARA SABER MAS ADELANTE LAS POSICIONES Y ASI MOVER EL CUBO Y LA CAMARA
-              0+avancex-20,0,0+avancez+160,
-              camX,camY+1,camZ);
+  //-----cámara según los niveles---------------
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+     glLoadIdentity();
+
+    if (nivel==3)
+    {
+      gluLookAt(camX+avancex-20,camY+100,camZ+260+avancez,
+      0+avancex-20,0,0+avancez+160,
+      camX,camY+1,camZ);
+    }
+    else if (dir==0)
+    {
+      gluLookAt(camX+avancex-20,camY-120,camZ+286+avancez,
+      0+avancex-20,0,0+avancez+286,
+      camX,camY+1,camZ);
+    }else if(dir==2){
+      glRotatef(90,0,1,0);
+      glRotatef(-10,1,0,0);
+          gluLookAt(camX+avancex-60,camY-140,camZ+280+avancez,
+          0+avancex-60,0,0+avancez+280,
+          camX,camY+1,camZ);
+    }else if (dir==1){
+      glRotatef(-90,0,1,0);
+      glRotatef(-10,1,0,0);
+      gluLookAt(camX+avancex+20,camY-140,camZ+260+avancez,
+                0+avancex+20,0,0+avancez+260,
+                camX,camY+1,camZ);
+        }
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     dibujaMapa();
-	text();
-    glutSwapBuffers();
-    
+    glutSwapBuffers();    
 }
 
-//RESETEAR SIRVE PARA BORRAR LOS VALORES DE LOS AVANCES QUE HACE QUE SE MUEVA LA CAMARA
-//ASI COMO TAMBIEN LA POSCION DEL CUBO LLEVANDOLO A SU INICIO
+//----reinicia los valores de la cámara---------------------
 void resetear(int a){
   switch(a){
     case 1:
@@ -2128,48 +2164,48 @@ void resetear(int a){
                   posX=posXi;
                   posZ=posZi;
     break;
-  case 2:
-    for (int i = 0; i < tamCubo; i++)
-                {
-                    zActual+=1;
-                    rotx+=4.5;
-                    avancez++;
-                    display();
-                }
-                posZ++;
-                for (int i = 0; i < 20; ++i)
-                {
-                  /* code */roty+=18;
-                            display();
-                }
-                  avancex=0;
-                  avancez=0;
-                  xActual=xActuali;
-                  zActual=zActuali;
-                  posX=posXi;
-                  posZ=posZi;
-  break;
-  case 3:
-    for (int i = 0; i < tamCubo; i++){
-                    xActual-=1;
-                    roty+=4.5;
-                    avancex--;
-                    display();
-                }
-                posX--;
-                for (int i = 0; i < 20; ++i)
-                {
-                  /* code */roty+=18;
-                            display();
-                }
-                  avancex=0;
-                  avancez=0;
-                  xActual=xActuali;
-                  zActual=zActuali;
-                  posX=posXi;
-                  posZ=posZi;
-  break;
-  case 4:
+    case 2:
+      for (int i = 0; i < tamCubo; i++)
+                  {
+                      zActual+=1;
+                      rotx+=4.5;
+                      avancez++;
+                      display();
+                  }
+                  posZ++;
+      for (int i = 0; i < 20; ++i)
+                  {
+                    /* code */roty+=18;
+                              display();
+                  }
+      avancex=0;
+      avancez=0;
+      xActual=xActuali;
+      zActual=zActuali;
+      posX=posXi;
+      posZ=posZi;
+    break;
+    case 3:
+      for (int i = 0; i < tamCubo; i++){
+                      xActual-=1;
+                      roty+=4.5;
+                      avancex--;
+                      display();
+                  }
+      posX--;
+                  for (int i = 0; i < 20; ++i)
+                  {
+                    /* code */roty+=18;
+                              display();
+                  }
+      avancex=0;
+      avancez=0;
+      xActual=xActuali;
+      zActual=zActuali;
+      posX=posXi;
+      posZ=posZi;
+    break;
+    case 4:
     for (int i = 0; i < tamCubo; i++){
                     xActual+=1;
                     roty-=4.5;
@@ -2189,8 +2225,48 @@ void resetear(int a){
                   posX=posXi;
                   posZ=posZi;
   }
+  
+  if (nivel==1)
+  {
+	avancex:0;
+	avancez=-200;
+	posX=posX;
+	posZ=posZ-10;
+	zActual=zActual+avancez;
+	xActual=xActual+avancex;
+	dir=0;
+	nivel=1;
+	display();
+  }
+  if (nivel==2)
+  {
+	avancex=-220;
+
+	avancez=-200;
+	posX=posX-11;
+	avancex=-220;
+	posZ=posZ-10;
+	zActual=zActual+avancez;
+	xActual=xActual+avancex;
+	dir=0;
+	nivel=2;
+  }
+  if (nivel==3)
+  {
+    avancex=160;
+
+                  avancez=-240;
+                  posX=posX+8;
+                  avancex=160;
+                  posZ=posZ-12;
+                  zActual=zActual+avancez;
+                  xActual=xActual+avancex;
+                  dir=0;
+                  nivel=3;
+  }
 }
 
+//----reinicia los valores de la cámara---------------------
 void resetear2(){
 
                 //posZ--;
@@ -2210,9 +2286,6 @@ void resetear2(){
 }
 
 
-//------------manejo de los saltos de la figura--------------
-
-
 // --------------- Para animación  ------------------------------------------
 
 int animating = 0;      // 0 sin animación 
@@ -2227,10 +2300,8 @@ void updateFrame() {
    // En esta funcion agregamos el codigo que hara la secuencia de cada escena como si fuera un fotograma 
   
 	//Verificamos el numero de frames para detener animación 
-   if(avancez==-580 && avancex==360){
-      	
-			pauseAnimation();
-			frameNumber=0;
+   if(frameNumber>5){
+      	exit(0);//se cierra el juego
 		}
   //Almacenamos el numero de frames 
   frameNumber++;
@@ -2254,152 +2325,154 @@ void startAnimation() {
        glutTimerFunc(800, timerFunction, 1);
    }
 }
-
 //-------------------------------------------------------------------------------
 
+//----funcion que se ejecuta al inicio------------------
 void init() {
 	//para activar el alpha
 	glEnable (GL_BLEND);
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glShadeModel (GL_FLAT);
 	glClearColor (0.0, 0.0, 0.0, 0.0);
-    camX = light_position[0] = 0.0f,camY = light_position[1] = 160.0f, camZ = light_position[2] =120.0f;
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+	camX = light_position[0] = 0.0f,camY = light_position[1] = 160.0f, camZ = light_position[2] =120.0f;
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	
+	//activa las luces
+	glEnable(GL_LIGHT0);
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_COLOR_MATERIAL);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_LIGHTING);
+	
+	text();//muestra el texto
 
-    glEnable(GL_LIGHT0);
-    glEnable(GL_NORMALIZE);
-    glEnable(GL_COLOR_MATERIAL);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_LIGHTING);
-	text();
-
-    glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION,light_spot_dir);
-    glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
-    glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, light_attenuation);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION,light_spot_dir);
+	glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
+	glLightfv(GL_LIGHT0, GL_LINEAR_ATTENUATION, light_attenuation);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 }
 
-//aqui con las variables de posicion verificamos si se encuentra en la posicion
-//pre establecida
-//----regresa el cubo a la posicion original
+//----regresa el cubo a la posicion original------------------------
 void teletransporte(){
-if (avancex==0 & avancez==-100)
-            {
-                  resetear2();
-                  avancex:0;
-                  avancez=-200;
-                  posX=posX;
-                  posZ=posZ-10;
-                  zActual=zActual+avancez;
-                  xActual=xActual+avancex;
-              display();
-            }
-            if (avancex==0 && avancez==-460)
-            {
-             resetear2();;
-                  avancex=-220;
-
-                  avancez=-200;
-                  posX=posX-11;
-                  avancex=-220;
-                  posZ=posZ-10;
-                  zActual=zActual+avancez;
-                  xActual=xActual+avancex;
-              display();
-            }
-            if (avancex==-260 && avancez==-460)
-            {
-             resetear2();;
-                  avancex=160;
-
-                  avancez=-240;
-                  posX=posX+8;
-                  avancex=160;
-                  posZ=posZ-12;
-                  zActual=zActual+avancez;
-                  xActual=xActual+avancex;
-              display();
-            }
-
-            if (avancex==340 && avancez==-280)
-            {
-             resetear2();
-                  avancex=160;
-                  avancez=-400;
-                  posX=posX+8;
-                  avancex=160;
-                  posZ=posZ-12-8;
-                  zActual=zActual+avancez;
-                  xActual=xActual+avancex;
-              display();
-            }if (avancex==200 && avancez==-440)
-            {
-             resetear2();
-                  avancex=-340;
-                  avancez=-680;
-                  posX=posX-17;
-                  posZ=posZ-34;
-                  zActual=zActual+avancez;
-                  xActual=xActual+avancex;
-              display();
-            }
+  if (avancex==0 & avancez==-100)
+    {
+      resetear2();
+      avancex:0;
+      avancez=-200;
+      posX=posX;
+      posZ=posZ-10;
+      zActual=zActual+avancez;
+      xActual=xActual+avancex;
+      dir=0;
+      nivel=1;
+      display();
+    }
+  if (avancex==0 && avancez==-460)
+    {
+      resetear2();
+      avancex=-220;
+      avancez=-200;
+      posX=posX-11;
+      avancex=-220;
+      posZ=posZ-10;
+      zActual=zActual+avancez;
+      xActual=xActual+avancex;
+      dir=0;
+      nivel=2;
+      display();
+    }
+  if (avancex==-260 && avancez==-460)
+    {
+      resetear2();
+      avancex=160;
+      avancez=-240;
+      posX=posX+8;
+      avancex=160;
+      posZ=posZ-12;
+      zActual=zActual+avancez;
+      xActual=xActual+avancex;
+      dir=0;
+      nivel=3;
+      display();
+    }
+  if (avancex==340 && avancez==-280)
+    {
+      resetear2();
+      avancex=160;
+      avancez=-400;
+      posX=posX+8;
+      avancex=160;
+      posZ=posZ-12-8;
+      zActual=zActual+avancez;
+      xActual=xActual+avancex;
+      dir=0;
+      display();
+    }
+  if (avancex==200 && avancez==-440)
+    {
+      resetear2();
+      avancex=-340;
+      avancez=-680;
+      posX=posX-17;
+      posZ=posZ-34;
+      zActual=zActual+avancez;
+      xActual=xActual+avancex;
+      dir=0;
+      display();
+    }
 }
 
+
+//------------manejo de los saltos de la figura--------------
 void  saltos(){
   int a=0;
   while(a<=1){
-   /* if (esValido(posX,posZ-1) && mapa[posZ-1][posX]==4 && altura==60)
-                { 
-                  resetear(1);
-                }        
-            else*/ if(esValido(posX,posZ-1) && mapa[posZ-1][posX]!=1){
-                
-                for (int i = 0; i < tamCubo; i++)
-                {
-                    zActual-=1;
-                    rotx-=4.5;
-                    avancez--;
-                    giro+=18;
-                    if (a==0)
-                    {
-                      altura+=5;
-                    }else{
-                      altura-=5;
-                    }
-                    display();
-                }
-                posZ--;
-                giro=0;
+    if(esValido(posX,posZ-1) && mapa[posZ-1][posX]!=1){ 
+        for (int i = 0; i < tamCubo; i++)
+          {
+            zActual-=1;
+            rotx-=4.5;
+            avancez--;
+            giro+=18;
+            if (a==0)
+              {
+                altura+=3;
+              }else{
+                altura-=3;
+              }
+            display();
+          }
+       posZ--;
+       giro=0;
 
-          }else{
-                  altura=0;
-                  display();  
-                }
+    }else{
+          altura=0;
+          display();  
+      }
 
-          a++;
+      a++;
   }teletransporte();
 }
 
-
+//------------desplazamiento de la figura--------------------
 void moverCubo(int direccion){
-   //printf ("si entra por el momento %d \n",avancez);
-   //printf ("valor de direccion %d \n",direccion);
-   //********************************************************LA DESICION DEL IF SIRVE ARA SABER SI HAN USADO LA BARRA ESPACIADORA PARA PODER SALTAR
-   if (direccion==32)
+   
+    if (direccion==32)
     {
       saltos();
     }
 
-switch(direccion){
+
+    switch(direccion){
         case MOV_ARRIBA://*****************LA PARTE MAS IMPORTATE AQUI SE ENCUENTRAN LA MAYORIA DE LAS CONDICIONES PARA EL CUBO
           if (esValido(posX,posZ-1) && mapa[posZ-1][posX]==4)
                 { 
                   resetear(1);
                 }        
-            else if(esValido(posX,posZ-1) && mapa[posZ-1][posX]!=1){
+          else if(esValido(posX,posZ-1) && mapa[posZ-1][posX]!=1){
                 
                 for (int i = 0; i < tamCubo; i++)
                 {
@@ -2409,17 +2482,17 @@ switch(direccion){
                     giro+=18;
                     display();
                 }
-                posZ--;
-                giro=0;
-            
-                teletransporte();
+              posZ--;
+              giro=0;
+              dir=0;
+              teletransporte();
           }else{
-              //printf ("no entra a ninguna condición %d \n",avancez);
+              printf ("no entra a ninguna condición %d \n",avancez);
             }
             break;
         case MOV_ABAJO:
             if(esValido(posX,posZ+1) && mapa[posZ+1][posX]==4){
-              resetear(2);
+                resetear(2);
             } else if(esValido(posX,posZ+1) && mapa[posZ+1][posX]!=1){
                 for (int i = 0; i < tamCubo; i++)
                 {
@@ -2429,7 +2502,8 @@ switch(direccion){
                     giro-=18;
                     display();
                 }
-                posZ++;
+              posZ++;
+              dir=0;
             }
             break;
         case MOV_IZQUIERDA://Izquierda
@@ -2444,14 +2518,14 @@ switch(direccion){
                     giro_lateral-=18;
                     display();
                 }
-                giro_lateral=0;
-                posX--;
+              giro_lateral=0;
+              posX--;
+              dir=1;
             }
             if (avancex==120 && avancez==-200)
             {
              resetear2();
                   avancex=300;
-
                   avancez=-240;
                   posX=posX+8+7;
                   avancex=300;
@@ -2473,14 +2547,16 @@ switch(direccion){
                     giro_lateral+=18;
                     display();
                 }
-                posX++;
-                giro_lateral=0;
+              posX++;
+              giro_lateral=0;
+              dir=2;
             }
             break;
     }
+
 }
 
-// Función para controlar teclas especiales
+//---------------------función para controlar teclas especiales--------------
 void specialKeys( int key, int x, int y )
 {
 
@@ -2505,16 +2581,8 @@ void specialKeys( int key, int x, int y )
 
 }
 
-// función que permite interactuar con la escena mediante el teclado
+//-------función que permite interactuar con la escena mediante el teclado-----------
 void keyboard(unsigned char key, int x, int y){
-    float t;  // La animación inicia al presionar la tecla espaciadora de igual forma se detiene
-    if ( key == 'p' ) {
-		if ( animating )
-		   pauseAnimation();
-	
-		else
-		   startAnimation();
-	   }
     if (key==32)
     {
       moverCubo(key);
@@ -2527,6 +2595,7 @@ void keyboard(unsigned char key, int x, int y){
     glutPostRedisplay();
 }
 
+//----------función principal---------------------
 int main(int argc, char **argv){
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
@@ -2536,17 +2605,14 @@ int main(int argc, char **argv){
     glutFullScreen();
     parseCubos();
     init();
-    //**********************SDL**************************++
-    //Initialize
-    init_sdl();
-    load_files_sdl();
+    initSdl();
+    loadFilesSdl();
     Mix_PlayMusic(music, -1 );
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(specialKeys);
     frameNumber = 0;
-    // Descomentar si queremos que la animación inicie al levantar el script
     startAnimation();
     glutMainLoop();
     return 0;
