@@ -2300,7 +2300,7 @@ void updateFrame() {
    // En esta funcion agregamos el codigo que hara la secuencia de cada escena como si fuera un fotograma 
   
 	//Verificamos el numero de frames para detener animación 
-   if(frameNumber>5){
+   if(frameNumber>200){
       	exit(0);//se cierra el juego
 		}
   //Almacenamos el numero de frames 
